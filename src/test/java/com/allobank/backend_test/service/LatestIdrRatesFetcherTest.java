@@ -1,5 +1,6 @@
 package com.allobank.backend_test.service;
 
+import com.allobank.backend_test.config.FrankfurterProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,14 +22,18 @@ class LatestIdrRatesFetcherTest {
 
     @Mock
     private RestTemplate restTemplate;
+    @Mock
+    private FrankfurterProperties properties;
 
     private DataStore dataStore;
     private LatestIdrRatesFetcher fetcher;
 
     @BeforeEach
     void setUp() {
+        when(properties.getBaseCurrency()).thenReturn("IDR");
+        when(properties.getTargetCurrency()).thenReturn("USD");
         dataStore = new DataStore();
-        fetcher = new LatestIdrRatesFetcher(restTemplate, dataStore);
+        fetcher = new LatestIdrRatesFetcher(restTemplate, dataStore, properties);
     }
 
     @Test
@@ -37,7 +42,7 @@ class LatestIdrRatesFetcherTest {
                 "base", "IDR",
                 "rates", Map.of("USD", 0.000064)
         );
-        when(restTemplate.getForObject(eq("/latest?base=IDR"), eq(Map.class)))
+        when(restTemplate.getForObject(eq("/latest?base={base}"), eq(Map.class), eq("IDR")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();
@@ -62,7 +67,7 @@ class LatestIdrRatesFetcherTest {
                 "base", "IDR",
                 "rates", Map.of("EUR", 0.000059)
         );
-        when(restTemplate.getForObject(eq("/latest?base=IDR"), eq(Map.class)))
+        when(restTemplate.getForObject(eq("/latest?base={base}"), eq(Map.class), eq("IDR")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();
@@ -81,7 +86,7 @@ class LatestIdrRatesFetcherTest {
                 "base", "IDR",
                 "rates", Map.of("USD", 0.0)
         );
-        when(restTemplate.getForObject(eq("/latest?base=IDR"), eq(Map.class)))
+        when(restTemplate.getForObject(eq("/latest?base={base}"), eq(Map.class), eq("IDR")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();
@@ -97,7 +102,7 @@ class LatestIdrRatesFetcherTest {
     @Test
     void shouldReturnListWithOneElement() {
         Map<String, Object> mockResponse = Map.of("base", "IDR", "rates", Map.of("USD", 0.000064));
-        when(restTemplate.getForObject(eq("/latest?base=IDR"), eq(Map.class)))
+        when(restTemplate.getForObject(eq("/latest?base={base}"), eq(Map.class), eq("IDR")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();

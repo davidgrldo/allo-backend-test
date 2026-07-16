@@ -21,15 +21,21 @@ class HistoricalIdrUsdFetcherTest {
 
     @Mock
     private RestTemplate restTemplate;
+    @Mock
+    private FrankfurterProperties properties;
+    @Mock
+    private FrankfurterProperties.Historical historical;
 
     private DataStore dataStore;
-    private FrankfurterProperties properties;
     private HistoricalIdrUsdFetcher fetcher;
 
     @BeforeEach
     void setUp() {
+        when(properties.getBaseCurrency()).thenReturn("IDR");
+        when(properties.getTargetCurrency()).thenReturn("USD");
+        when(properties.getHistorical()).thenReturn(historical);
+        when(historical.getDateRange()).thenReturn("2024-01-01..2024-01-05");
         dataStore = new DataStore();
-        properties = new FrankfurterProperties();
         fetcher = new HistoricalIdrUsdFetcher(restTemplate, dataStore, properties);
     }
 
@@ -40,8 +46,10 @@ class HistoricalIdrUsdFetcherTest {
                 "end_date", "2024-01-05",
                 "rates", Map.of("2024-01-01", Map.of("USD", 0.000064))
         );
-        String dateRange = properties.getHistorical().getDateRange();
-        when(restTemplate.getForObject(eq("/{dateRange}?from=IDR&to=USD"), eq(Map.class), eq(dateRange)))
+        String dateRange = historical.getDateRange();
+        when(restTemplate.getForObject(
+                eq("/{dateRange}?from={from}&to={to}"), eq(Map.class),
+                eq(dateRange), eq("IDR"), eq("USD")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();
@@ -56,8 +64,10 @@ class HistoricalIdrUsdFetcherTest {
     @Test
     void shouldReturnListWrappedResponse() {
         Map<String, Object> mockResponse = Map.of("rates", Map.of());
-        String dateRange = properties.getHistorical().getDateRange();
-        when(restTemplate.getForObject(eq("/{dateRange}?from=IDR&to=USD"), eq(Map.class), eq(dateRange)))
+        String dateRange = historical.getDateRange();
+        when(restTemplate.getForObject(
+                eq("/{dateRange}?from={from}&to={to}"), eq(Map.class),
+                eq(dateRange), eq("IDR"), eq("USD")))
                 .thenReturn(mockResponse);
 
         fetcher.fetchFromExternal();

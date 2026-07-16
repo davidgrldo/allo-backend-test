@@ -1,5 +1,6 @@
 package com.allobank.backend_test.service;
 
+import com.allobank.backend_test.config.FrankfurterProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,17 +20,21 @@ public class LatestIdrRatesFetcher implements IDRDataFetcher {
 
     private final RestTemplate restTemplate;
     private final DataStore dataStore;
+    private final FrankfurterProperties properties;
 
-    public LatestIdrRatesFetcher(RestTemplate restTemplate, DataStore dataStore) {
+    public LatestIdrRatesFetcher(RestTemplate restTemplate, DataStore dataStore, FrankfurterProperties properties) {
         this.restTemplate = restTemplate;
         this.dataStore = dataStore;
+        this.properties = properties;
     }
 
     @Override
     public void fetchFromExternal() {
-        log.info("Fetching latest IDR rates from Frankfurter");
+        String baseCurrency = properties.getBaseCurrency();
+        log.info("Fetching latest {} rates from Frankfurter", baseCurrency);
         @SuppressWarnings("unchecked")
-        Map<String, Object> response = restTemplate.getForObject("/latest?base=IDR", Map.class);
+        Map<String, Object> response = restTemplate.getForObject(
+                "/latest?base={base}", Map.class, baseCurrency);
         if (response != null && response.containsKey("rates")) {
             response = new LinkedHashMap<>(response);
             computeUsdBuySpread(response);
@@ -39,16 +44,18 @@ public class LatestIdrRatesFetcher implements IDRDataFetcher {
 
     @SuppressWarnings("unchecked")
     private void computeUsdBuySpread(Map<String, Object> response) {
+        String targetCurrency = properties.getTargetCurrency();
         Map<String, Object> rates = (Map<String, Object>) response.get("rates");
         if (rates == null) return;
-        Object usdRateObj = rates.get("USD");
-        if (usdRateObj instanceof Number usdRate) {
-            BigDecimal rateUsd = BigDecimal.valueOf(usdRate.doubleValue());
-            if (rateUsd.compareTo(BigDecimal.ZERO) > 0) {
-                BigDecimal usdBuySpread = BigDecimal.ONE.divide(rateUsd, 10, RoundingMode.HALF_UP)
+        Object targetRateObj = rates.get(targetCurrency);
+        if (targetRateObj instanceof Number targetRate) {
+            BigDecimal rateTarget = BigDecimal.valueOf(targetRate.doubleValue());
+            if (rateTarget.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal buySpread = BigDecimal.ONE.divide(rateTarget, 10, RoundingMode.HALF_UP)
                         .multiply(SPREAD_MULTIPLIER);
                 Map<String, Object> mutableRates = new LinkedHashMap<>(rates);
-                mutableRates.put("USD_BuySpread_IDR", usdBuySpread);
+                String spreadField = targetCurrency + "_BuySpread_" + properties.getBaseCurrency();
+                mutableRates.put(spreadField, buySpread);
                 response.put("rates", mutableRates);
             }
         }

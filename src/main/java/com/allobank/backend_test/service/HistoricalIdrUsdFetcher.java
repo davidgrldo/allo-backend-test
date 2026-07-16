@@ -27,10 +27,12 @@ public class HistoricalIdrUsdFetcher implements IDRDataFetcher {
     @Override
     public void fetchFromExternal() {
         String dateRange = properties.getHistorical().getDateRange();
-        log.info("Fetching historical IDR-USD rates for date range: {}", dateRange);
+        String baseCurrency = properties.getBaseCurrency();
+        String targetCurrency = properties.getTargetCurrency();
+        log.info("Fetching historical {}-{} rates for date range: {}", baseCurrency, targetCurrency, dateRange);
         @SuppressWarnings("unchecked")
         Map<String, Object> response = restTemplate.getForObject(
-                "/{dateRange}?from=IDR&to=USD", Map.class, dateRange);
+                "/{dateRange}?from={from}&to={to}", Map.class, dateRange, baseCurrency, targetCurrency);
         dataStore.store("historical_idr_usd", response != null ? List.of(response) : null);
     }
 

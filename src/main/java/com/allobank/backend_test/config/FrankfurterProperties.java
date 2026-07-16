@@ -5,7 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "frankfurter")
 public class FrankfurterProperties {
 
-    private String baseUrl = "https://api.frankfurter.app";
+    private String baseUrl;
+
+    private String baseCurrency;
+
+    private String targetCurrency;
 
     private Historical historical = new Historical();
 
@@ -15,6 +19,22 @@ public class FrankfurterProperties {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    public String getBaseCurrency() {
+        return baseCurrency;
+    }
+
+    public void setBaseCurrency(String baseCurrency) {
+        this.baseCurrency = baseCurrency;
+    }
+
+    public String getTargetCurrency() {
+        return targetCurrency;
+    }
+
+    public void setTargetCurrency(String targetCurrency) {
+        this.targetCurrency = targetCurrency;
     }
 
     public Historical getHistorical() {
