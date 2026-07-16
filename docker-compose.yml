@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: splitbill-db
+    environment:
+      POSTGRES_DB: splitbill
+      POSTGRES_USER: splitbill
+      POSTGRES_PASSWORD: splitbill
+    ports:
+      - "5432:5432"
+    volumes:
+      - splitbill-pg:/var/lib/postgresql/data
+
+volumes:
+  splitbill-pg:

@@ -1,116 +1,103 @@
-# Allo Bank Backend Developer Take-Home Test
+# Split Bill API
 
-Welcome, and thank you for your interest in joining Allo Bank Engineering!
+A Spring Boot 3.x REST API for group expense splitting and settlement. Built for the Allo Bank Backend Developer Take-Home Test.
 
-This challenge is intentionally open-ended. There is no skeleton, no guided steps, and no single correct answer. We want to see how you think, how you structure a solution, and what you consider important in production-grade code.
+## Build & Run
 
----
+### Prerequisites
+- Java 21+
+- Maven (or use the included `./mvnw` wrapper)
+- Docker (for PostgreSQL + containerized build)
 
-## The Challenge: Split Bill API
+### Build
+```bash
+./mvnw clean package
+```
 
-Build a **Spring Boot REST API** that helps a group of people manage shared expenses and calculate who owes whom at the end.
+### Run with Docker
+```bash
+docker build -t splitbill .
+docker run -p 4110:4110 splitbill
+```
 
-Think of a real scenario: a group trip, a team lunch, a shared apartment. People take turns paying for things, and at the end someone needs to figure out the fairest way to settle up.
+### Run locally (requires PostgreSQL)
+```bash
+docker run --name splitbill-db -e POSTGRES_DB=splitbill -e POSTGRES_USER=splitbill -e POSTGRES_PASSWORD=splitbill -p 5432:5432 -d postgres:16-alpine
+./mvnw spring-boot:run
+```
 
-**Your API should, at minimum, support:**
+The API runs on **port 4110**.
 
-1. Creating a bill group with a name and a list of participants
-2. Adding expenses to a group — who paid, how much, and who it was for
-3. Retrieving a settlement summary — a clear breakdown of who owes whom and how much
+## API Endpoints
 
-Everything else is up to you.
+### Participants
+```bash
+# Create participant
+curl -X POST http://localhost:4110/api/v1/participants \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice"}'
 
----
+# List participants
+curl http://localhost:4110/api/v1/participants
+```
 
-## Technical Requirements
+### Groups
+```bash
+# Create group with participants
+curl -X POST http://localhost:4110/api/v1/groups \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Trip to Bali", "participantIds": [1, 2, 3]}'
 
-These are non-negotiable:
+# List groups
+curl http://localhost:4110/api/v1/groups
 
-- **Java 17+**, **Spring Boot**, **Maven**
-- **`BigDecimal`** for all monetary values — no `float` or `double`
-- **A `Dockerfile`** using a multi-stage build (see `Dockerfile.template` in this repo)
-- At least **one unit test** covering your settlement calculation logic
-- A **`README.md`** in your submission with:
-  - How to build and run your project
-  - Example `curl` commands for each endpoint
-  - Your **GitHub username** and your calculated **service charge** value (see Personalization section below)
-  - Answer to the submission question (see below)
+# Get group by ID
+curl http://localhost:4110/api/v1/groups/1
+```
 
----
+### Expenses
+```bash
+# Add expense (equal split)
+curl -X POST http://localhost:4110/api/v1/groups/1/expenses \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Dinner", "payerId": 1, "amount": 90.00, "category": "FOOD", "splitStrategy": "EQUAL", "splits": [{"participantId": 1}, {"participantId": 2}, {"participantId": 3}]}'
+
+# Add expense (exact split)
+curl -X POST http://localhost:4110/api/v1/groups/1/expenses \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Hotel", "payerId": 2, "amount": 300.00, "category": "ACCOMMODATION", "splitStrategy": "EXACT", "splits": [{"participantId": 1, "amount": 100.00}, {"participantId": 2, "amount": 100.00}, {"participantId": 3, "amount": 100.00}]}'
+
+# List expenses for a group
+curl http://localhost:4110/api/v1/groups/1/expenses
+```
+
+### Payments
+```bash
+# Record a payment
+curl -X POST http://localhost:4110/api/v1/groups/1/payments \
+  -H "Content-Type: application/json" \
+  -d '{"payerId": 3, "payeeId": 1, "amount": 30.00}'
+```
+
+### Settlement
+```bash
+# Get settlement summary
+curl http://localhost:4110/api/v1/groups/1/settlement
+```
+
+Response includes:
+- Net balances per participant
+- Minimized settlement transactions (who pays whom)
+- Service charge (personalized)
+- Per-category expense summaries
 
 ## Personalization
 
-Every settlement response must include two additional fields: `service_charge_pct` and `service_charge_amount`.
+- **GitHub username**: `davidgrldo`
+- **Unicode sum**: 100+97+118+105+100+103+114+108+100+111 = 1056
+- **service_charge_pct**: 1056 % 10 = **6%**
+- **service_charge_amount**: 6% of total group expenses
 
-The `service_charge_pct` is unique to you and is calculated as follows:
+## Design Answer
 
-1. Take your GitHub username in **lowercase**
-2. Sum the Unicode (ASCII) values of all characters
-3. `service_charge_pct = (sum % 10)` — this gives a value between 0 and 9 (representing a percentage)
-
-**Example:** GitHub username `johndoe47`
-- Unicode sum: `106+111+104+110+100+111+101+52+55` = `850`
-- `service_charge_pct = 850 % 10` = **0** (0%)
-
-The `service_charge_amount` is this percentage applied to the total group expenses.
-
-Include both fields in your settlement response. This value must be computed in code — do not hardcode it.
-
----
-
-## Show Your Skills
-
-The minimum requirements get you through the door. What you build beyond that is how you stand out.
-
-Some directions to explore — pick what interests you, or invent your own:
-
-- **Multiple split strategies** — equal split, split by percentage, split by exact amount per person
-- **Settlement optimization** — minimize the total number of transactions needed to settle all debts
-- **Payment recording** — mark a debt as paid and update outstanding balances
-- **Expense categories** — tag expenses (food, transport, accommodation) and show per-category summaries
-- **Audit trail** — track when expenses and payments were added
-
-There is no bonus point checklist. We are looking at the quality of what you choose to build, not the quantity.
-
----
-
-## Submission Question
-
-In your `README.md`, answer the following in a short paragraph (3–5 sentences):
-
-> **"What was the hardest design decision you made while building this, and what trade-off did you accept?"**
-
-There is no wrong answer. We ask this because it tells us more about how you think than the code itself.
-
----
-
-## Submission Process
-
-1. **Create a private GitHub repository** for your solution
-2. **Add `allobankdev` as a collaborator** (Settings → Collaborators → Add people)
-3. **Include a `Dockerfile`** in the root of your project (see `Dockerfile.template`)
-4. **Submit via the form:** [Click Here](https://forms.gle/nZKQ2EjTCPfAKHog7)
-
-   The form will ask for:
-   - Your full name and contact details
-   - Your private GitHub repository URL
-   - Your GitHub username (for personalization verification)
-
-> Do not open a Pull Request to this repository. Submissions are private.
-
----
-
-## What We Look For
-
-| Area | What it signals |
-|---|---|
-| Data modeling | How you think about domain entities and relationships |
-| API design | Clarity, consistency, and REST conventions |
-| Monetary handling | Awareness of precision issues in financial systems |
-| Code structure | Separation of concerns, readability, maintainability |
-| Testing | What you consider worth testing and why |
-| Submission answer | Genuine engagement with the problem |
-
-We review every submission before the interview. The interview will include questions directly about your code — be ready to walk through it and extend it live.
-
-Good luck!
+I chose a layered architecture with Spring Data JPA entities mapped to PostgreSQL, service classes holding the business logic, and thin REST controllers. The settlement engine uses a greedy creditor/debtor netting algorithm with sorted PriorityQueue-style pairing to minimize the number of settle-up transactions — the core differentiator from a naive "everyone pays everyone" approach. All monetary values use `BigDecimal` with `NUMERIC(19,4)` database columns to guarantee precision and prevent floating-point drift. `@Transactional` annotations on service methods ensure Hibernate lazy collections are safely hydrated within the transaction boundary, while `open-in-view: false` keeps the persistence layer properly encapsulated. The Dockerfile uses a multi-stage build (`eclipse-temurin:21-jdk-alpine` → `eclipse-temurin:21-jre-alpine`) to produce a minimal runtime image.

@@ -1,0 +1,20 @@
+server:
+  port: 4110
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/splitbill
+    username: splitbill
+    password: splitbill
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+splitbill:
+  github-username: davidgrldo
