@@ -125,3 +125,63 @@ Your PR will be evaluated on the following:
 * Code Review Readiness: The code should be well-structured and ready for immediate review.
 
 Good luck!
+
+---
+
+## Implementation: IDR Rate Aggregator
+
+### Setup & Run
+
+```bash
+# Clone and build
+git clone <repo-url> && cd allo-backend-test
+./mvnw clean package -DskipTests
+java -jar target/allo-backend-test-0.0.1-SNAPSHOT.jar
+
+# Run tests
+./mvnw test
+```
+
+### Endpoint Usage
+
+```bash
+# Latest IDR rates with computed USD_BuySpread_IDR
+curl http://localhost:8080/api/finance/data/latest_idr_rates
+
+# Historical IDR-USD time series
+curl http://localhost:8080/api/finance/data/historical_idr_usd
+
+# Supported currencies
+curl http://localhost:8080/api/finance/data/supported_currencies
+
+# Unknown resource type → HTTP 400
+curl -i http://localhost:8080/api/finance/data/unknown_type
+```
+
+### Architectural Rationale
+
+**1. Strategy Pattern (Polymorphism Justification)**
+
+The Strategy Pattern with map-based dispatch was chosen over conditional blocks because:
+
+- **Open/Closed Principle**: Adding a new resource type requires only a new strategy class annotated with `@Component("new_resource")`. The controller, runner, and dispatch logic need zero changes.
+- **Single Responsibility**: Each strategy encapsulates its own fetch URL, transformation logic, and error handling. A `switch` block would centralize 3+ distinct concerns in one class.
+- **Testability**: Each strategy can be unit-tested in isolation with mocked dependencies. Conditional dispatch would require testing the controller with all code paths.
+- **Spring Integration**: `Map<String, IDRDataFetcher>` auto-injection provides dispatch by bean name without any explicit wiring — the framework does the lookup.
+
+**2. Client FactoryBean**
+
+A custom `FactoryBean<RestTemplate>` was used over a plain `@Bean` method because:
+
+- **Lifecycle Control**: `FactoryBean` gives explicit control over object creation (`getObject()`), type metadata (`getObjectType()`), and singleton/prototype scope — all in one place.
+- **Centralized Configuration**: The factory encapsulates base URL injection, connection timeout (5s), and read timeout (10s) in a single class. A plain `@Bean` would scatter this concern across the config class.
+- **Constraint Compliance**: The spec explicitly requires the HTTP client to be created via `FactoryBean<T>`, not a plain `@Bean`.
+
+**3. ApplicationRunner**
+
+`ApplicationRunner` was chosen over `@PostConstruct` because:
+
+- **Initialization Order**: `ApplicationRunner.run()` executes after the full application context is ready (all beans instantiated, all dependencies wired). `@PostConstruct` fires during bean initialization when other beans may not be fully available.
+- **ApplicationArguments Access**: `ApplicationRunner` provides access to command-line arguments, enabling future configurability (e.g., skip-load flags).
+- **Failure Isolation**: The runner wraps each resource fetch in per-resource try/catch, logging warnings without preventing application startup. A failed `@PostConstruct` can block or roll back the entire context.
+- **Spec Compliance**: The spec explicitly requires `ApplicationRunner` or `CommandLineRunner`, not `@PostConstruct`.
