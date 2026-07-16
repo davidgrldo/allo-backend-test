@@ -5,6 +5,7 @@ import com.allobank.splitbill.model.Participant;
 import com.allobank.splitbill.repository.GroupRepository;
 import com.allobank.splitbill.repository.ParticipantRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ public class GroupService {
         this.participantRepository = participantRepository;
     }
 
+    @Transactional
     public Group create(String name, List<Long> participantIds) {
         if (participantIds == null || participantIds.isEmpty()) {
             throw new IllegalArgumentException("A group must include at least one participant");
@@ -45,10 +47,12 @@ public class GroupService {
         return groupRepository.save(group);
     }
 
+    @Transactional(readOnly = true)
     public List<Group> listAll() {
         return groupRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Group findById(Long id) {
         return groupRepository.findById(id)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Group not found: " + id));

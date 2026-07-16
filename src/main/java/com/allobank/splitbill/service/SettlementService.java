@@ -12,6 +12,7 @@ import com.allobank.splitbill.repository.PaymentRepository;
 import com.allobank.splitbill.util.ServiceChargeCalculator;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,6 +30,7 @@ import java.util.Map;
  * charge and per-category expense summaries.
  */
 @Service
+@Transactional(readOnly = true)
 public class SettlementService {
 
     private static final int RESPONSE_SCALE = 2;

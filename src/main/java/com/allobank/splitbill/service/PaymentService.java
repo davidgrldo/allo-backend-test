@@ -7,6 +7,7 @@ import com.allobank.splitbill.repository.GroupRepository;
 import com.allobank.splitbill.repository.PaymentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class PaymentService {
         this.groupRepository = groupRepository;
     }
 
+    @Transactional
     public Payment recordPayment(Long groupId, Long payerId, Long payeeId, BigDecimal amount) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new EntityNotFoundException("Group not found: " + groupId));
@@ -50,6 +52,7 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
+    @Transactional(readOnly = true)
     public List<Payment> listByGroup(Long groupId) {
         if (!groupRepository.existsById(groupId)) {
             throw new EntityNotFoundException("Group not found: " + groupId);

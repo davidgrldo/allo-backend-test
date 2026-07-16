@@ -9,6 +9,7 @@ import com.allobank.splitbill.repository.ExpenseRepository;
 import com.allobank.splitbill.repository.GroupRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,6 +30,7 @@ public class ExpenseService {
         this.groupRepository = groupRepository;
     }
 
+    @Transactional
     public Expense addExpense(Long groupId, Long payerId, BigDecimal amount,
                               SplitStrategy strategy, List<SplitInput> splitInputs,
                               com.allobank.splitbill.model.enums.ExpenseCategory category,
@@ -73,6 +75,7 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
+    @Transactional(readOnly = true)
     public List<Expense> listByGroup(Long groupId) {
         if (!groupRepository.existsById(groupId)) {
             throw new EntityNotFoundException("Group not found: " + groupId);
